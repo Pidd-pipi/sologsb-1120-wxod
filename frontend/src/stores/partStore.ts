@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { db, toPlain } from '../utils/db';
 import { newId } from '../utils/id';
+import { getLocalSourceTag } from '../utils/sourceTag';
 import type { MovementPart, MovementPartDraft } from '../types/part';
 
 interface PartState {
@@ -20,7 +21,11 @@ export const usePartStore = defineStore('part', {
       this.loaded = true;
     },
     async add(draft: MovementPartDraft) {
-      const record: MovementPart = { ...toPlain(draft), id: newId('prt') };
+      const record: MovementPart = {
+        ...toPlain(draft),
+        id: newId('prt'),
+        sourceTag: getLocalSourceTag(),
+      };
       await db.parts.put(toPlain(record));
       this.items = [...this.items, record];
       return record;

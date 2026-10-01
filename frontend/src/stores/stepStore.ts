@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { db, toPlain } from '../utils/db';
 import { newId } from '../utils/id';
+import { getLocalSourceTag } from '../utils/sourceTag';
 import type { RepairStep, RepairStepDraft } from '../types/step';
 import type { TimekeepingTest, TimekeepingTestDraft } from '../types/test';
 
@@ -28,7 +29,12 @@ export const useStepStore = defineStore('step', {
       this.loaded = true;
     },
     async add(draft: RepairStepDraft) {
-      const record: RepairStep = { ...toPlain(draft), id: newId('stp') };
+      const record: RepairStep = {
+        ...toPlain(draft),
+        id: newId('stp'),
+        sourceTag: getLocalSourceTag(),
+        originSeq: draft.seq,
+      };
       await db.steps.put(toPlain(record));
       this.items = [...this.items, record];
       return record;
@@ -40,6 +46,16 @@ export const useStepStore = defineStore('step', {
     },
     async rollback(id: string) {
       const patch: Partial<RepairStep> = { state: 'rolledback', finishedAt: undefined };
+      await db.steps.update(id, patch);
+      this.items = this.items.map((it) => (it.id === id ? { ...it, ...patch } : it));
+    },
+    /** 合并导致失效的工序，按新决定重做：清失效标记回到待办 */
+    async redo(id: string) {
+      const patch: Partial<RepairStep> = {
+        state: 'pending',
+        finishedAt: undefined,
+        invalidReason: undefined,
+      };
       await db.steps.update(id, patch);
       this.items = this.items.map((it) => (it.id === id ? { ...it, ...patch } : it));
     },
@@ -58,7 +74,11 @@ export const useStepStore = defineStore('step', {
       });
     },
     async addTest(draft: TimekeepingTestDraft) {
-      const record: TimekeepingTest = { ...toPlain(draft), id: newId('tst') };
+      const record: TimekeepingTest = {
+        ...toPlain(draft),
+        id: newId('tst'),
+        sourceTag: getLocalSourceTag(),
+      };
       await db.tests.put(toPlain(record));
       this.tests = [record, ...this.tests];
       return record;

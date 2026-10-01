@@ -90,6 +90,10 @@ async function rollback(id: string) {
   await stepStore.rollback(id);
   ElMessage.warning('步骤已回退');
 }
+async function redo(id: string) {
+  await stepStore.redo(id);
+  ElMessage.success('已重置为待办，请按新零件决定重做该工序');
+}
 
 onMounted(async () => {
   await clockStore.load();
@@ -188,7 +192,7 @@ onMounted(async () => {
             <span v-else class="muted">全部完成</span>
           </div>
         </template>
-        <StepSequence :items="steps" @finish="finish" @rollback="rollback" />
+        <StepSequence :items="steps" @finish="finish" @rollback="rollback" @redo="redo" />
       </el-card>
     </div>
   </div>

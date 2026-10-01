@@ -149,6 +149,12 @@ onMounted(async () => {
           </template>
         </el-table-column>
         <el-table-column prop="sourceLot" label="配换来源批号" width="150" />
+        <el-table-column label="录入来源" width="130">
+          <template #default="{ row }">
+            <el-tag v-if="row.sourceTag" size="small" type="info">{{ row.sourceTag }}</el-tag>
+            <el-tag v-else size="small" type="warning">旧档无标记</el-tag>
+          </template>
+        </el-table-column>
         <el-table-column prop="dimension" label="关键尺寸 mm" width="120" />
         <el-table-column label="待配" width="90">
           <template #default="{ row }">

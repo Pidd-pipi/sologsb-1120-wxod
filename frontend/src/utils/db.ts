@@ -3,10 +3,12 @@ import type { Clock } from '../types/clock';
 import type { MovementPart } from '../types/part';
 import type { RepairStep } from '../types/step';
 import type { TimekeepingTest } from '../types/test';
+import type { StoredBundle } from '../types/merge';
 import { newId } from './id';
+import { getLocalSourceTag } from './sourceTag';
 
 export const DB_NAME = 'gbclockrepair';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3;
 export const LS_VERSION_KEY = 'gbclockrepair:db-version';
 
 class ClockRepairDB extends Dexie {
@@ -14,6 +16,8 @@ class ClockRepairDB extends Dexie {
   parts!: Table<MovementPart, string>;
   steps!: Table<RepairStep, string>;
   tests!: Table<TimekeepingTest, string>;
+  /** 离线合并暂存：写入失败时两边的包原样保留，供重试 */
+  mergeBundles!: Table<StoredBundle, string>;
 
   constructor() {
     super(DB_NAME);
@@ -46,6 +50,23 @@ class ClockRepairDB extends Dexie {
           .toCollection()
           .modify((row: any) => {
             if (row.positions === undefined) row.positions = [];
+          });
+      });
+    // v3：离线合并。新增暂存表与来源标记索引；老工序补 originSeq（合并重排前的本机顺序）
+    this.version(3)
+      .stores({
+        clocks: 'id, clockNo, kind, caliber, conditionGrade, createdAt, sourceTag',
+        parts: 'id, clockId, name, wearState, decision, sourceLot, sourceTag',
+        steps: 'id, clockId, seq, stepType, state, startedAt, sourceTag',
+        tests: 'id, clockId, testedAt, conclusion, sourceTag',
+        mergeBundles: 'id, side, status, sourceTag, storedAt',
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table('steps')
+          .toCollection()
+          .modify((row: any) => {
+            if (row.originSeq === undefined) row.originSeq = typeof row.seq === 'number' ? row.seq : 0;
           });
       });
   }
@@ -232,9 +253,10 @@ export async function ensureSeedData(): Promise<void> {
   ];
 
   await db.transaction('rw', db.clocks, db.parts, db.steps, db.tests, async () => {
-    await db.clocks.bulkPut(clocks);
-    await db.parts.bulkPut(parts);
-    await db.steps.bulkPut(steps);
-    await db.tests.bulkPut(tests);
+    const tag = getLocalSourceTag();
+    await db.clocks.bulkPut(clocks.map((c) => ({ ...c, sourceTag: tag })));
+    await db.parts.bulkPut(parts.map((p) => ({ ...p, sourceTag: tag })));
+    await db.steps.bulkPut(steps.map((s) => ({ ...s, sourceTag: tag, originSeq: s.seq })));
+    await db.tests.bulkPut(tests.map((t) => ({ ...t, sourceTag: tag })));
   });
 }

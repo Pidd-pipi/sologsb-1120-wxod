@@ -34,6 +34,8 @@ export interface Clock {
   /** 存放位置 */
   storagePos: string;
   createdAt: number;
+  /** 来源标记：哪台平板/分店建档（合并认领依据之一，旧档可能缺失） */
+  sourceTag?: string;
 }
 
 export type ClockDraft = Omit<Clock, 'id' | 'createdAt'>;

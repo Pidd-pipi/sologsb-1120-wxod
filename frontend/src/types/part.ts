@@ -45,6 +45,8 @@ export interface MovementPart {
   sourceLot: string;
   /** 关键尺寸 mm */
   dimension: number;
+  /** 来源标记：哪台平板/分店登记（旧档可能缺失，合并前须确认） */
+  sourceTag?: string;
 }
 
 export type MovementPartDraft = Omit<MovementPart, 'id'>;

@@ -13,6 +13,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'finish', id: string): void;
   (e: 'rollback', id: string): void;
+  (e: 'redo', id: string): void;
   (e: 'move', payload: { id: string; direction: 'up' | 'down' }): void;
   (e: 'reorder', payload: { fromId: string; toId: string }): void;
 }>();
@@ -65,39 +66,57 @@ function onDrop(toId: string) {
           <div v-if="!row.cleanSolvent && !row.oilType && !row.torque">—</div>
         </template>
       </el-table-column>
-      <el-table-column label="异常说明" min-width="160">
-        <template #default="{ row }">{{ row.troubleNote || '—' }}</template>
+      <el-table-column label="责任人" min-width="130">
+        <template #default="{ row }">
+          <div>{{ row.operator }}</div>
+          <div v-if="row.sourceTag" class="source">{{ row.sourceTag }}</div>
+        </template>
       </el-table-column>
-      <el-table-column label="责任人" width="100">
-        <template #default="{ row }">{{ row.operator }}</template>
+      <el-table-column label="异常 / 失效" min-width="170">
+        <template #default="{ row }">
+          <el-alert
+            v-if="row.state === 'invalid'"
+            type="error"
+            :closable="false"
+            show-icon
+            :title="row.invalidReason || '关联零件决定变更，工序失效'"
+            class="invalid-alert"
+          />
+          <span v-else>{{ row.troubleNote || '—' }}</span>
+        </template>
       </el-table-column>
-      <el-table-column label="操作" width="250">
+      <el-table-column label="操作" width="300">
         <template #default="{ row, $index }">
-          <el-button v-if="row.state !== 'done'" size="small" type="primary" @click="emit('finish', row.id)">
-            完成
-          </el-button>
-          <el-button v-else size="small" type="warning" @click="emit('rollback', row.id)">回退</el-button>
-          <template v-if="sortable">
-            <el-button size="small" :disabled="$index === 0" @click="emit('move', { id: row.id, direction: 'up' })">
-              上移
-            </el-button>
-            <el-button
-              size="small"
-              :disabled="$index === items.length - 1"
-              @click="emit('move', { id: row.id, direction: 'down' })"
-            >
-              下移
-            </el-button>
+          <template v-if="row.state === 'invalid'">
+            <el-button size="small" type="danger" @click="emit('redo', row.id)">按新决定重做</el-button>
           </template>
-          <span
-            class="drag-handle"
-            draggable="true"
-            title="拖拽到目标行可交换顺序"
-            @dragstart="onDragStart(row.id)"
-            @dragover.prevent
-            @drop="onDrop(row.id)"
-            >⣿</span
-          >
+          <template v-else>
+            <el-button v-if="row.state !== 'done'" size="small" type="primary" @click="emit('finish', row.id)">
+              完成
+            </el-button>
+            <el-button v-else size="small" type="warning" @click="emit('rollback', row.id)">回退</el-button>
+            <template v-if="sortable">
+              <el-button size="small" :disabled="$index === 0" @click="emit('move', { id: row.id, direction: 'up' })">
+                上移
+              </el-button>
+              <el-button
+                size="small"
+                :disabled="$index === items.length - 1"
+                @click="emit('move', { id: row.id, direction: 'down' })"
+              >
+                下移
+              </el-button>
+            </template>
+            <span
+              class="drag-handle"
+              draggable="true"
+              title="拖拽到目标行可交换顺序"
+              @dragstart="onDragStart(row.id)"
+              @dragover.prevent
+              @drop="onDrop(row.id)"
+              >⣿</span
+            >
+          </template>
         </template>
       </el-table-column>
     </el-table>
@@ -109,6 +128,13 @@ function onDrop(toId: string) {
 .gap {
   color: #d93025;
   font-weight: 700;
+}
+.source {
+  font-size: 12px;
+  color: #97a0ad;
+}
+.invalid-alert {
+  padding: 2px 8px;
 }
 .drag-handle {
   margin-left: 8px;

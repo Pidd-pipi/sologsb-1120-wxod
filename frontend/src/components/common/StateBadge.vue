@@ -19,6 +19,7 @@ const type = computed(() => {
   if (props.state) {
     if (props.state === 'done') return 'success';
     if (props.state === 'rolledback') return 'danger';
+    if (props.state === 'invalid') return 'danger';
     return 'info';
   }
   switch (props.grade) {
@@ -38,6 +39,7 @@ const text = computed(() => {
   if (props.state) {
     if (props.state === 'done') return '已完成';
     if (props.state === 'rolledback') return '已回退';
+    if (props.state === 'invalid') return '已失效';
     return '待办';
   }
   return props.grade ?? '—';

@@ -29,6 +29,8 @@ export interface TimekeepingTest {
   /** 动力储备 h */
   powerReserve: number;
   conclusion: string;
+  /** 来源标记：哪台平板/分店测试 */
+  sourceTag?: string;
 }
 
 export type TimekeepingTestDraft = Omit<TimekeepingTest, 'id'>;

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { db, toPlain } from '../utils/db';
 import { newId } from '../utils/id';
+import { getLocalSourceTag } from '../utils/sourceTag';
 import type { Clock, ClockDraft, ConditionGrade } from '../types/clock';
 
 interface ClockState {
@@ -21,7 +22,12 @@ export const useClockStore = defineStore('clock', {
       this.loaded = true;
     },
     async add(draft: ClockDraft) {
-      const record: Clock = { ...toPlain(draft), id: newId('clk'), createdAt: Date.now() };
+      const record: Clock = {
+        ...toPlain(draft),
+        id: newId('clk'),
+        createdAt: Date.now(),
+        sourceTag: getLocalSourceTag(),
+      };
       await db.clocks.put(toPlain(record));
       this.items = [record, ...this.items];
       return record;

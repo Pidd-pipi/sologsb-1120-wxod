@@ -33,6 +33,10 @@ async function rollback(id: string) {
   await stepStore.rollback(id);
   ElMessage.warning('步骤已回退');
 }
+async function redo(id: string) {
+  await stepStore.redo(id);
+  ElMessage.success('已重置为待办，请按新零件决定重做该工序');
+}
 async function move(payload: { id: string; direction: 'up' | 'down' }) {
   const list = steps.value;
   const index = list.findIndex((it) => it.id === payload.id);
@@ -117,6 +121,7 @@ onMounted(async () => {
                 sortable
                 @finish="finish"
                 @rollback="rollback"
+                @redo="redo"
                 @move="move"
                 @reorder="reorder"
               />
