@@ -55,6 +55,10 @@ function onDrop(toId: string) {
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
           <StateBadge :state="row.state" />
+          <el-tooltip v-if="row.invalid && row.invalidReason" :content="row.invalidReason" placement="top">
+            <el-tag size="small" type="danger" effect="dark" style="margin-top: 4px">已失效</el-tag>
+          </el-tooltip>
+          <el-tag v-else-if="row.invalid" size="small" type="danger" effect="dark" style="margin-top: 4px">已失效</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="清洗/润滑" min-width="200">

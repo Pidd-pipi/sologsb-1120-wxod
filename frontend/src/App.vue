@@ -34,6 +34,7 @@ function onSelect(index: string) {
         <el-menu-item index="/steps/new">工序录入</el-menu-item>
         <el-menu-item index="/parts">零件清单</el-menu-item>
         <el-menu-item index="/tests">走时测试</el-menu-item>
+        <el-menu-item index="/merge">档案合并</el-menu-item>
       </el-menu>
       <el-tag size="small" effect="plain">本地结构版本 v{{ version }}</el-tag>
     </el-header>

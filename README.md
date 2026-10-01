@@ -59,11 +59,11 @@ sologsb-1120/
         ├── App.vue
         ├── router/index.ts
         ├── types/{clock,part,step,test}.ts
-        ├── stores/{clock,part,step}Store.ts
+        ├── stores/{clock,part,step,merge}Store.ts
         ├── components/common/{StepSequence,RateChart,ClockCard,StateBadge}.vue
         ├── hooks/{useClockSearch,useRepairProgress}.ts
-        ├── pages/{ClockList,ClockDetail,StepForm,PartList,TestView}.vue
-        └── utils/{db,timeCalc,id}.ts
+        ├── pages/{ClockList,ClockDetail,StepForm,PartList,TestView,MergePage}.vue
+        └── utils/{db,timeCalc,id,merge}.ts
 ```
 
 ## 页面与路由
@@ -75,16 +75,31 @@ sologsb-1120/
 | `/steps/new` | 新建维修工序：选步骤类型后动态出清洗液/油脂/力矩字段，顺序号冲突即报错 | RepairStep、MovementPart |
 | `/parts` | 零件与配换清单：按磨损状态分组，标出待修配条目与来源批号 | MovementPart |
 | `/tests/:clockId` | 走时测试录入与多方位均值计算，生成走时单文本 | TimekeepingTest |
+| `/merge` | 档案合并：导出/导入离线档案包，按藏品号认领、合并工序与零件、列清差异后写入，失败可重试 | ArchivePackage、MergeResult |
 
 `/` 重定向到 `/clocks`，未匹配路由同样兜底到 `/clocks`。
 
 ## 数据存储说明
 
-- 数据库名 `gbclockrepair`，当前结构版本 **v2**（`localStorage['gbclockrepair:db-version']` 记录）。
+- 数据库名 `gbclockrepair`，当前结构版本 **v3**（`localStorage['gbclockrepair:db-version']` 记录）。
 - 四张表：`clocks`（钟表）、`parts`（机芯零件）、`steps`（维修工序）、`tests`（走时测试）。
 - v1 → v2 迁移：补齐老记录的 `state`、`partIds`、`torque`、`positions` 字段并新增索引。
+- v2 → v3 迁移：为工序补充 `invalid` / `invalidReason` 失效标记（合并功能使用）。
 - 容器无状态、不挂载命名卷；清空站点数据即回到初始示范数据。
 - 首次打开灌入 2 台示范钟表、3 项零件、3 道工序与 1 次走时测试。
+
+## 档案合并（两台平板离线回店）
+
+两台平板各自离线记录后回店，可通过「档案合并」页（`/merge`）把两边数据合到同一份档案，不再整份覆盖。
+
+- **导出档案包**：在合并页填写设备名称与操作人，导出含来源标记（`source`）的 JSON 档案包。
+- **导入预览**：可一次多选两边的档案包，系统先列出差异与变更，**确认前不动原档**。
+- **按藏品号认领**：同一台钟以 `clockNo` 认领，不新增重复钟表；底库已有字段不覆盖，仅补齐空字段。
+- **工序合并**：两边新增的工序都保留各自操作人与顺序，合并后按 `startedAt` 稳定重排为连续顺序号（不跳号）。
+- **零件决定变更 → 工序失效**：同一件零件（按「钟表 + 名称 + 装配位置」匹配）若处理决定相对底库改变，关联到该零件的维修工序即标记为「已失效」，并按合并后数据重算顺序。
+- **差异列清**：缺钟表、缺零件、旧档案没有来源标记时分别列为错误（红色，阻止写入）或提醒（橙色）。
+- **写入失败可重试**：写入前把两边的包与合并结果暂存到 `localStorage`；写入失败保留两边的包，页面提供「重试写入」，下次打开也会提示继续。
+- 写入为单事务（`db.transaction`），任一页失败整体回滚，不会出现半写状态。
 
 ## 功能要点
 
@@ -93,3 +108,4 @@ sologsb-1120/
 - **工序完成 / 回退**：完成后写 `finishedAt`，回退后计入待办与回退计数。
 - **双轴走时图**：`<RateChart>` 左轴日差 s/d、右轴摆幅 °，标注四方位读数与均值。
 - **走时单导出**：按方位均值生成文本，可复制或下载 txt。
+- **档案合并**：两台平板离线回店后，按藏品号认领同一台钟，合并两边工序（保留操作人与顺序）、零件与走时测试；零件决定变更则关联工序失效并重算顺序；缺件/缺钟/无来源标记先列差异，确认后才写入，失败保留包可重试。

@@ -4,6 +4,7 @@ import ClockDetail from '../pages/ClockDetail.vue';
 import StepForm from '../pages/StepForm.vue';
 import PartList from '../pages/PartList.vue';
 import TestView from '../pages/TestView.vue';
+import MergePage from '../pages/MergePage.vue';
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/clocks' },
@@ -12,6 +13,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/steps/new', name: 'step-form', component: StepForm },
   { path: '/parts', name: 'part-list', component: PartList },
   { path: '/tests/:clockId', name: 'test-view', component: TestView },
+  { path: '/merge', name: 'merge', component: MergePage },
   { path: '/:pathMatch(.*)*', redirect: '/clocks' },
 ];
 

@@ -43,6 +43,10 @@ export interface RepairStep {
   startedAt: number;
   finishedAt?: number;
   state: StepState;
+  /** 零件处理决定变更后，关联工序失效，需按合并后数据重新确认 */
+  invalid?: boolean;
+  /** 失效原因（合并时写入） */
+  invalidReason?: string;
 }
 
 export type RepairStepDraft = Omit<RepairStep, 'id'>;
